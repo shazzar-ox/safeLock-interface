@@ -65,11 +65,19 @@ const SavingDetails = () => {
 	const [userBalance, setUserBalance] = useState(0);
 	const [savingsInfo, setSavingsInfo] = useState({
 		savingsName: "",
+		withdrawalName: "",
+		emergencyWithdrawalName: "",
 		amount: "",
 		date: "",
 	});
-	const [eachName, setEachName] = useState("");
-	const [userTableData, setUserTableData] = useState(true);
+	const [eachNameArray, setEachNameArray] = useState([]);
+	const [userFormData, setUserFormData] = useState(false);
+	const [savedAmount, setSavedAmount] = useState(0);
+	const [expectedWithdrawalDate, setExpectedWithdrawalDate] = useState(0);
+	const [names, setNames] = useState("");
+	let keys = Object.keys(eachNameArray);
+	const [bodyAction, setBodyAction] = useState(false);
+	const [appState, setAppState] = useState(false);
 	// integrating front end to the contract with Wagmi...
 	// 1. getUserBalance contract....
 
@@ -89,11 +97,11 @@ const SavingDetails = () => {
 	});
 
 	// GET SAVINGS USER INFO....
-	const getUserInfo = useContractRead({
+	const getUserSavingsInfo = useContractRead({
 		address: safeLockContract,
 		abi: tokenLockAbi,
 		functionName: "getUserSavingInfo",
-		args: [incomingContract, address, eachName],
+		args: [incomingContract, address, names],
 	});
 	// console.log(getUserInfo);
 
@@ -117,10 +125,50 @@ const SavingDetails = () => {
 			savingsInfo.date,
 		],
 	});
+
+	//  prepare config for withrawal....
+	const { config: withdrawConfig } = usePrepareContractWrite({
+		address: safeLockContract,
+		abi: tokenLockAbi,
+		functionName: "withdraw",
+		args: [incomingContract, savingsInfo.withdrawalName],
+	});
+
+	//  prepare config for emergency withdrawal....emergencyWithdrawalName
+	const { config: withdrawEmergencyConfig } = usePrepareContractWrite({
+		address: safeLockContract,
+		abi: tokenLockAbi,
+		functionName: "emergencyWithdrawal",
+		args: [incomingContract, savingsInfo.emergencyWithdrawalName],
+	});
+
 	// console.log(approveConfig, getDataBalance);
 
 	//  deposit function settings...
-	const { data: saveData, write: saveFunc } = useContractWrite(saveConfig);
+	const {
+		isSuccess: saveSuccess,
+		data: saveData,
+		write: saveFunc,
+		reset: saveReset,
+	} = useContractWrite(saveConfig);
+
+	// withdraw function settings...
+	const {
+		isSuccess: withdrawSuccess,
+		data: withdrawData,
+		write: withdrawFunc,
+		reset: withdrawReset,
+		error: withdrawError,
+		data: withrawData 
+	} = useContractWrite(withdrawConfig);
+
+	//  emergency withdraw function....withdrawEmergencyConfig
+	const {
+		isSuccess: withdrawEmergencySuccess,
+		data: withdrawEmergencyData,
+		write: withdrawEmergencyFunc,
+		reset: withdrawEmergencyReset,
+	} = useContractWrite(withdrawEmergencyConfig);
 
 	// functions....
 	const approveToken = async (event) => {
@@ -162,43 +210,84 @@ const SavingDetails = () => {
 		}
 	}, [isConnected]);
 	// let createTableRows;
-	let userArray = [];
+	let userNames = [];
 	useEffect(() => {
-		console.log(getUserInfo.data);
-		if (getUserSavingsName.data != undefined && getUserInfo.data != undefined) {
-
-			for (let i = 1; i < getUserSavingsName.data.length; i++) {
-						
-					let unixTimeStamp = getUserInfo.data.finalTime.toString();
-					let date = new Date(unixTimeStamp * 1000);
-					let userObject = {
-						[eachName]: {
-							amount: getUserInfo.data.amount.toString() / decimal,
-							finalTime: date.toLocaleDateString(),
-						},
-					};
-					console.log(eachName);
-					setUserTableData(!userTableData);
-					console.log(userObject);
-					userArray.push(userObject);
-				
+		if (getUserSavingsName.data != undefined) {
+			for (let i = 0; i < getUserSavingsName.data.length; i++) {
+				const newArray = getUserSavingsName.data[i];
+				userNames.push(newArray);
+				console.log(userNames);
+				setEachNameArray((prev) => {
+					return [...prev, newArray];
+				});
 			}
 		}
-		console.log(userArray);
-	}, [
-		isConnected,
-		eachName,
-		getUserSavingsName.isSuccess,
-		getUserInfo.isSuccess,
-		// userTableData,
-	]);
+	}, [getUserSavingsName.isSuccess, saveSuccess]);
 
+	useEffect(() => {
+		if (getUserSavingsInfo.data != undefined) {
+			let unixTimeStamp = getUserSavingsInfo.data.finalTime.toString();
+			let date = new Date(unixTimeStamp * 1000);
+			let dateTorealTime = date.toLocaleDateString();
+			let amountToSave = getUserSavingsInfo.data.amount.toString() / decimal;
+			setSavedAmount((prev) => (prev = amountToSave));
+			setExpectedWithdrawalDate((prev) => (prev = dateTorealTime));
+		}
+	}, [getUserSavingsInfo.isSuccess, names]);
+
+	useEffect(() => {
+		if (userFormData) {
+			const handleBodyClick = (event) => {
+				// Your event handling logic here
+				// console.log("Body clicked!", event.target);
+				setUserFormData(false);
+			};
+
+			document.body.addEventListener("click", handleBodyClick);
+
+			return () => {
+				document.removeEventListener("click", handleBodyClick);
+			};
+		}
+	});
+
+	// console.log("this is ", eachNameArray);
 	// approve function setttings...
 	const {
 		data: data1,
 		write: approveFunc,
 		isSuccess: approveSuccess,
+		reset: approveReset,
 	} = useContractWrite(approveConfig);
+
+	// reset Approve....
+	useEffect(() => {
+		setAppState(true);
+		setTimeout(() => {
+			approveReset();
+		}, 3000);
+	}, [approveSuccess]);
+
+	// reset Save
+	useEffect(() => {
+		setTimeout(() => {
+			saveReset();
+		}, 3000);
+	}, [saveSuccess]);
+
+	// withdraw reset
+	useEffect(() => {
+		setTimeout(() => {
+			withdrawReset();
+		}, 3000);
+	}, [withdrawSuccess]);
+
+	// emeregency withraw reset..
+	useEffect(() => {
+		setTimeout(() => {
+			withdrawEmergencyReset();
+		}, 3000);
+	}, [withdrawEmergencySuccess]);
 
 	const currentDate = new Date();
 	// console.log(currentDate.);
@@ -212,10 +301,6 @@ const SavingDetails = () => {
 			: currentDate.getMonth() + 1;
 	const year = currentDate.getFullYear();
 	// console.log(day, month, year);
-
-	const refresh = () => {
-		setcount((prev) => prev + 1);
-	};
 
 	const inputChange = (event) => {
 		const { name, value } = event.target;
@@ -260,10 +345,47 @@ const SavingDetails = () => {
 		}
 	};
 
+	const handleWithdrawalSubmit = (event) => {
+		event.preventDefault();
+		withdrawFunc();
+	};
+
+	const handleEmergencyWithdrawalSubmit = (event) => {
+		event.preventDefault();
+		withdrawEmergencyFunc();
+	};
+
+	const clicked = (value) => {
+		// console.log(value);
+		setNames(value);
+		setUserFormData(true);
+	};
 	return (
 		<>
 			{/* <div onClick={refresh}> */}
 			<WagmiConfig config={wagmiConfig}>
+				{approveSuccess &&
+					alert(
+						`${incomingTokenName} has been approved, You can now Lock your Funds.. This transaction is Entirely Free`
+					)}
+				{saveSuccess &&
+					alert(
+						`${savingsInfo.amount / decimal} has been added to ${
+							savingsInfo.savingsName
+						} Happy Saving...`
+					)}
+				{withdrawSuccess &&
+					alert(
+						`${incomingTokenName} saved to ${savingsInfo.withdrawalName} has been deposited in your wallet!!!`
+					)}
+
+				{withdrawError && alert(`${withrawData}`)}
+				{withdrawEmergencySuccess &&
+					alert(
+						`${incomingTokenName} saved to ${savingsInfo.withdrawalName} has been deposited in your wallet!!! 
+						
+						Note this comes with a 10% TaxFee`
+					)}
 				<Nav />
 				{/* </div> */}
 				<div class="my-8">
@@ -303,7 +425,7 @@ const SavingDetails = () => {
 						<p>
 							<button
 								// type="submit"
-								disabled={approveSuccess || !isConnected}
+								disabled={!appState && !isConnected}
 								class="rounded-full"
 								// onClick={
 								// }
@@ -314,42 +436,95 @@ const SavingDetails = () => {
 						</p>
 						<p>
 							<button
-								disabled={!approveSuccess}
+								disabled={!appState && !isConnected}
 								type="submit"
 								class="rounded-full"
 								onClick={handleSubmit}
 							>
 								SAVE!
 							</button>
+						</p>
+					</form>
+					<h3>{!isConnected && "Connect Wallet To Use App"}</h3>
+					{incomingTokenName}...{decimal}... hello
+				</div>
+				<div>
+					<ul>
+						{keys.map((each) => {
+							return (
+								<li key={each} onClick={() => clicked(eachNameArray[each])}>
+									{eachNameArray[each]}
+								</li>
+							);
+						})}
+					</ul>
+					{isConnected && userFormData && (
+						<form>
+							<h3>Savings info....</h3>
+							<label htmlFor="savingsName">Savings Name:</label>
+							<p id="savingsName">{names}</p>
+							<br />
+							<label htmlFor="savingsAmount">Saved Amount:</label>
+							<p id="savingsAmount">
+								{savedAmount} {incomingTokenName}
+							</p>
+							<br />
+							<label htmlFor="savingsWithdrawal">Withdrawal Date:</label>
+							<p id="savingsWithdrawal">{expectedWithdrawalDate}</p>
+						</form>
+					)}
+				</div>
+
+				{/*  withrawal form.... */}
+				<div class="my-8">
+					<form>
+						<h3>Withdrawal Slip..</h3>
+						<label htmlFor="savingsNames">Savings Name:</label>
+						<input
+							type="text"
+							name="withdrawalName"
+							id="savingsNames"
+							value={savingsInfo.withdrawalName}
+							placeholder="Input savings name"
+							onChange={inputChange}
+						/>
+						<br />
+						<p>
 							<button
-								// type="submit"
-								disabled={!approveSuccess}
+								disabled={!isConnected}
+								type="submit"
+								class="rounded-full"
+								onClick={handleWithdrawalSubmit}
 							>
 								WITHDRAW!
 							</button>
 						</p>
 					</form>
-					<h3>{!isConnected && "Connect Wallet To Use App"}</h3>
-					{incomingTokenName}...{decimal}... hello
-					<table class="table-auto">
-						<tr>
-							<th>Savings Name</th>
-							<th>Withdrawal Date</th>
-							<th>Saved Amount</th>
-						</tr>
-						{/* {createTableRows()} */}
-						<tr>
-							<td>{eachName}.....m</td>
-							<td>
-								{getUserInfo.data != undefined ? getUserInfo.data.amount : ""}
-							</td>
-							<td>
-								{getUserInfo.data != undefined
-									? getUserInfo.data.finalTime
-									: ""}
-							</td>
-						</tr>
-					</table>
+
+					{/* Emergency WithdrawalSLip */}
+					<form>
+						<h3>Emergency Withdrawal Slip..</h3>
+						<label htmlFor="savingsNamess">Savings Name:</label>
+						<input
+							type="text"
+							name="emergencyWithdrawalName"
+							id="savingsNamess"
+							value={savingsInfo.emergencyWithdrawalName}
+							placeholder="Input savings name"
+							onChange={inputChange}
+						/>
+						<br />
+						<p>
+							<button
+								disabled={!isConnected}
+								type="submit"
+								class="rounded-full"
+								onClick={handleEmergencyWithdrawalSubmit}
+							>
+								EMERGENCY!
+							</button>
+						</p>
+					</form>
 				</div>
 			</WagmiConfig>
 			<Web3Modal projectId={projectId} ethereumClient={ethereumClient} />
