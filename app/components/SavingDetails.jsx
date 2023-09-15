@@ -280,7 +280,7 @@ const SavingDetails = () => {
 		setTimeout(() => {
 			withdrawReset();
 		}, 3000);
-	}, [withdrawSuccess]);
+	}, [withdrawSuccess,withdrawError]);
 
 	// emeregency withraw reset..
 	useEffect(() => {
