@@ -4,6 +4,8 @@ import Nav from "./Nav";
 import { PROJECT_ID } from "../utils/contractAddress";
 import { ethers } from "ethers";
 import { contractDetails } from "../components/index";
+import { useRouter } from "next/navigation";
+import { useNotification, NotificationProvider } from "@web3uikit/core";
 
 // import fs from "../utils/index.jsx";
 
@@ -19,6 +21,7 @@ import {
 	useNetwork,
 	useContractRead,
 	usePrepareContractWrite,
+	useWaitForTransaction,
 } from "wagmi";
 
 import {
@@ -28,6 +31,7 @@ import {
 } from "@web3modal/ethereum";
 import { Web3Modal, useWeb3Modal } from "@web3modal/react";
 import { sepolia } from "wagmi/chains";
+import {BsFillBellFill} from "react-icons/bs"
 
 const chains = [sepolia];
 const projectId = PROJECT_ID;
@@ -75,10 +79,27 @@ const SavingDetails = () => {
 	const [savedAmount, setSavedAmount] = useState(0);
 	const [expectedWithdrawalDate, setExpectedWithdrawalDate] = useState(0);
 	const [names, setNames] = useState("");
-	let keys = Object.keys(eachNameArray);
+	// let keys = Object.values(eachNameArray).sort();
+	const [keys, setKeys] = useState([]);
 	const [bodyAction, setBodyAction] = useState(false);
 	const [appState, setAppState] = useState(false);
+	const [boolManager, setboolManager] = useState(false);
+	const [savedList, setSavedList] = useState("");
+	const { push } = useRouter();
+	const dispatch = useNotification();
 	// integrating front end to the contract with Wagmi...
+
+	// control all notifcations...
+
+	const handleNewNotification = (msg) => {
+		dispatch({
+			type: "success",
+			message: msg,
+			title: "New Notification",
+			position: "topR",
+			icon: <BsFillBellFill/>,
+		});
+	};
 	// 1. getUserBalance contract....
 
 	const getDataBalance = useContractRead({
@@ -94,7 +115,14 @@ const SavingDetails = () => {
 		abi: tokenLockAbi,
 		functionName: "getUserSavingsName",
 		args: [incomingContract, address],
+		watch: true,
 	});
+	// wait for readConfirmation...
+
+	// const readConfirmation = useWaitForTransaction({
+	// 	confirmations: 3,
+	// 	hash: getUserSavingsName?.hash,
+	// });
 
 	// GET SAVINGS USER INFO....
 	const getUserSavingsInfo = useContractRead({
@@ -132,6 +160,10 @@ const SavingDetails = () => {
 		abi: tokenLockAbi,
 		functionName: "withdraw",
 		args: [incomingContract, savingsInfo.withdrawalName],
+		onError(error) {
+			// alert("time is not up");
+			handleNewNotification("time is not up");
+		},
 	});
 
 	//  prepare config for emergency withdrawal....emergencyWithdrawalName
@@ -140,6 +172,9 @@ const SavingDetails = () => {
 		abi: tokenLockAbi,
 		functionName: "emergencyWithdrawal",
 		args: [incomingContract, savingsInfo.emergencyWithdrawalName],
+		// onError(error) {
+		// 	alert(error);
+		// },
 	});
 
 	// console.log(approveConfig, getDataBalance);
@@ -152,15 +187,27 @@ const SavingDetails = () => {
 		reset: saveReset,
 	} = useContractWrite(saveConfig);
 
+	// wait for confirmation....
+
+	const saveConfirmation = useWaitForTransaction({
+		confirmations: 1,
+		hash: saveData?.hash,
+	});
+
 	// withdraw function settings...
 	const {
 		isSuccess: withdrawSuccess,
 		data: withdrawData,
 		write: withdrawFunc,
 		reset: withdrawReset,
-		error: withdrawError,
-		data: withrawData 
+		data: withrawData,
 	} = useContractWrite(withdrawConfig);
+
+	//  wait for conmfirmation....
+	const withdrawConfirmation = useWaitForTransaction({
+		confirmations: 1,
+		hash: withdrawData?.hash,
+	});
 
 	//  emergency withdraw function....withdrawEmergencyConfig
 	const {
@@ -169,6 +216,12 @@ const SavingDetails = () => {
 		write: withdrawEmergencyFunc,
 		reset: withdrawEmergencyReset,
 	} = useContractWrite(withdrawEmergencyConfig);
+
+	//  wait for withdraw confrimtation.....
+	const withdrawEmergencyConfrimation = useWaitForTransaction({
+		confirmations: 1,
+		hash: withdrawEmergencyData?.hash,
+	});
 
 	// functions....
 	const approveToken = async (event) => {
@@ -185,44 +238,68 @@ const SavingDetails = () => {
 			setCurrentChainId((prev) => (prev = chainId));
 			token = localStorage.getItem("tokenName");
 			tokenValue = localStorage.getItem("value");
-			setIncomingTokenName(
-				(prev) => (prev = localStorage.getItem("tokenName"))
-			);
-			// console.log(token, incomingTokenName);
+			console.log(token, incomingTokenName);
+			if (token == null || tokenValue == null) {
+				push("/");
+			} else {
+				setIncomingTokenName(
+					(prev) => (prev = localStorage.getItem("tokenName"))
+				);
 
-			setDecimal((prev) => (prev = localStorage.getItem("value")));
-			const ERC20_CONTRACT_ADDRESSES = contractDetails[token]["tokenContract"];
-			const ERC20_CONTRACT_ABI = contractDetails[token]["tokenAbi"];
-			setIncomingContractAbi((prev) => (prev = ERC20_CONTRACT_ABI));
-			const ERC2O_CONTRACT_ADDRESS =
-				chainId in ERC20_CONTRACT_ADDRESSES
-					? ERC20_CONTRACT_ADDRESSES[chainId]
-					: null;
-			console.log(ERC20_CONTRACT_ADDRESSES);
-			setIncomingContract((prev) => (prev = ERC2O_CONTRACT_ADDRESS));
-			// safeLock token details....
-			const tokenLockAddresses = contractDetails["tokenLock"]["tokenContract"];
-			const tokenLockAddress =
-				chainId in tokenLockAddresses ? tokenLockAddresses[chainId] : null;
-			setSafeLockContract((prev) => (prev = tokenLockAddress));
+				setDecimal((prev) => (prev = localStorage.getItem("value")));
+				const ERC20_CONTRACT_ADDRESSES =
+					contractDetails[token]["tokenContract"];
+				const ERC20_CONTRACT_ABI = contractDetails[token]["tokenAbi"];
+				setIncomingContractAbi((prev) => (prev = ERC20_CONTRACT_ABI));
+				const ERC2O_CONTRACT_ADDRESS =
+					chainId in ERC20_CONTRACT_ADDRESSES
+						? ERC20_CONTRACT_ADDRESSES[chainId]
+						: null;
+				console.log(ERC20_CONTRACT_ADDRESSES);
+				setIncomingContract((prev) => (prev = ERC2O_CONTRACT_ADDRESS));
+				// safeLock token details....
+				const tokenLockAddresses =
+					contractDetails["tokenLock"]["tokenContract"];
+				const tokenLockAddress =
+					chainId in tokenLockAddresses ? tokenLockAddresses[chainId] : null;
+				setSafeLockContract((prev) => (prev = tokenLockAddress));
+			}
 		} else {
 			setState(!state);
 		}
-	}, [isConnected]);
+	}, [address]);
+
 	// let createTableRows;
 	let userNames = [];
 	useEffect(() => {
 		if (getUserSavingsName.data != undefined) {
+			console.log("in");
 			for (let i = 0; i < getUserSavingsName.data.length; i++) {
 				const newArray = getUserSavingsName.data[i];
 				userNames.push(newArray);
-				console.log(userNames);
 				setEachNameArray((prev) => {
-					return [...prev, newArray];
+					return userNames;
 				});
 			}
 		}
-	}, [getUserSavingsName.isSuccess, saveSuccess]);
+	}, [
+		getUserSavingsName.isSuccess,
+		// getUserSavingsName.isLoading,
+		// readConfirmation.isSuccess,
+		saveConfirmation.isSuccess,
+		address,
+		withdrawConfirmation.isSuccess,
+		withdrawEmergencyConfrimation.isSuccess,
+	]);
+	// console.log(readConfirmation.isSuccess);
+
+	useEffect(() => {
+		// document.querySelector(".clearList").textContent = "";
+
+		setKeys(Object.values(eachNameArray).sort());
+	}, [eachNameArray]);
+
+	console.log(keys);
 
 	useEffect(() => {
 		if (getUserSavingsInfo.data != undefined) {
@@ -233,7 +310,7 @@ const SavingDetails = () => {
 			setSavedAmount((prev) => (prev = amountToSave));
 			setExpectedWithdrawalDate((prev) => (prev = dateTorealTime));
 		}
-	}, [getUserSavingsInfo.isSuccess, names]);
+	}, [getUserSavingsInfo.isSuccess, names, isConnected]);
 
 	useEffect(() => {
 		if (userFormData) {
@@ -260,34 +337,59 @@ const SavingDetails = () => {
 		reset: approveReset,
 	} = useContractWrite(approveConfig);
 
+	const approvedTransaction = useWaitForTransaction({
+		confirmations: 1,
+		hash: data1?.hash,
+	});
+
 	// reset Approve....
 	useEffect(() => {
-		setAppState(true);
-		setTimeout(() => {
-			approveReset();
-		}, 3000);
-	}, [approveSuccess]);
+		if (approvedTransaction.isSuccess) {
+			handleNewNotification(
+				`${incomingTokenName} has been approved, You can now Lock your Funds.. This transaction is Entirely Free
+				Tx:${approvedTransaction.data?.transactionHash}`
+			);
+			setAppState(true);
+			setboolManager(true);
+			setTimeout(() => {
+				approveReset();
+			}, 1000);
+		}
 
-	// reset Save
-	useEffect(() => {
-		setTimeout(() => {
-			saveReset();
-		}, 3000);
-	}, [saveSuccess]);
-
-	// withdraw reset
-	useEffect(() => {
-		setTimeout(() => {
-			withdrawReset();
-		}, 3000);
-	}, [withdrawSuccess,withdrawError]);
-
-	// emeregency withraw reset..
-	useEffect(() => {
-		setTimeout(() => {
-			withdrawEmergencyReset();
-		}, 3000);
-	}, [withdrawEmergencySuccess]);
+		if (saveConfirmation.isSuccess) {
+			handleNewNotification(
+				`${savingsInfo.amount / decimal} has been added to ${
+					savingsInfo.savingsName
+				} Happy Saving...
+				Tx:${saveConfirmation.data?.transactionHash}`
+			);
+			setTimeout(() => {
+				saveReset();
+			}, 3000);
+		}
+		if (withdrawConfirmation.isSuccess) {
+			handleNewNotification(
+				`${incomingTokenName} saved to ${savingsInfo.withdrawalName} has been deposited in your wallet!!!
+				Tx:${withdrawConfirmation.data?.transactionHash}`
+			);
+			setTimeout(() => {
+				withdrawReset();
+			}, 3000);
+		}
+		if (withdrawEmergencyConfrimation.isSuccess) {
+			handleNewNotification(`${incomingTokenName} saved to ${savingsInfo.withdrawalName} has been deposited in your wallet!!! 
+			Note this comes with a 10% TaxFee
+			Tx:${withdrawEmergencyConfrimation.data?.transactionHash}`);
+			setTimeout(() => {
+				withdrawEmergencyReset();
+			}, 3000);
+		}
+	}, [
+		approvedTransaction.isSuccess,
+		saveConfirmation.isSuccess,
+		withdrawConfirmation.isSuccess,
+		withdrawEmergencyConfrimation.isSuccess,
+	]);
 
 	const currentDate = new Date();
 	// console.log(currentDate.);
@@ -360,32 +462,11 @@ const SavingDetails = () => {
 		setNames(value);
 		setUserFormData(true);
 	};
+	console.log(address, appState);
 	return (
 		<>
 			{/* <div onClick={refresh}> */}
 			<WagmiConfig config={wagmiConfig}>
-				{approveSuccess &&
-					alert(
-						`${incomingTokenName} has been approved, You can now Lock your Funds.. This transaction is Entirely Free`
-					)}
-				{saveSuccess &&
-					alert(
-						`${savingsInfo.amount / decimal} has been added to ${
-							savingsInfo.savingsName
-						} Happy Saving...`
-					)}
-				{withdrawSuccess &&
-					alert(
-						`${incomingTokenName} saved to ${savingsInfo.withdrawalName} has been deposited in your wallet!!!`
-					)}
-
-				{withdrawError && alert(`${withrawData}`)}
-				{withdrawEmergencySuccess &&
-					alert(
-						`${incomingTokenName} saved to ${savingsInfo.withdrawalName} has been deposited in your wallet!!! 
-						
-						Note this comes with a 10% TaxFee`
-					)}
 				<Nav />
 				{/* </div> */}
 				<div class="my-8">
@@ -422,63 +503,65 @@ const SavingDetails = () => {
 							onChange={inputChange}
 						></input>
 						<br />
-						<p>
-							<button
-								// type="submit"
-								disabled={!appState && !isConnected}
-								class="rounded-full"
-								// onClick={
-								// }
-								onClick={approveToken}
-							>
-								APPROVE!
-							</button>
-						</p>
-						<p>
-							<button
-								disabled={!appState && !isConnected}
-								type="submit"
-								class="rounded-full"
-								onClick={handleSubmit}
-							>
-								SAVE!
-							</button>
-						</p>
-					</form>
-					<h3>{!isConnected && "Connect Wallet To Use App"}</h3>
-					{incomingTokenName}...{decimal}... hello
-				</div>
-				<div>
-					<ul>
-						{keys.map((each) => {
-							return (
-								<li key={each} onClick={() => clicked(eachNameArray[each])}>
-									{eachNameArray[each]}
-								</li>
-							);
-						})}
-					</ul>
-					{isConnected && userFormData && (
-						<form>
-							<h3>Savings info....</h3>
-							<label htmlFor="savingsName">Savings Name:</label>
-							<p id="savingsName">{names}</p>
-							<br />
-							<label htmlFor="savingsAmount">Saved Amount:</label>
-							<p id="savingsAmount">
-								{savedAmount} {incomingTokenName}
-							</p>
-							<br />
-							<label htmlFor="savingsWithdrawal">Withdrawal Date:</label>
-							<p id="savingsWithdrawal">{expectedWithdrawalDate}</p>
-						</form>
-					)}
-				</div>
 
+						<button
+							// type="submit"
+							// disabled={appState || address == undefined}
+							class="rounded-full"
+							// onClick={
+							// }
+							onClick={approveToken}
+						>
+							APPROVE!
+						</button>
+
+						<button
+							// disabled={address == undefined || !appState}
+							type="submit"
+							class="rounded-full"
+							onClick={handleSubmit}
+						>
+							SAVE!
+						</button>
+					</form>
+				</div>
+				{/* <h3>{!isConnected && "Connect Wallet To Use App"}</h3> */}
+				<div>
+					{incomingTokenName}...{decimal}... hellox
+					<div
+						className="clearList"
+						style={{ display: "inline-flex", gap: "2%" }}
+					>
+						<div>
+							{keys.map((each, index) => {
+								return (
+									<div key={index} onClick={() => clicked(each)}>
+										{each}
+									</div>
+								);
+							})}
+						</div>
+					</div>
+				</div>
+				{address && userFormData && (
+					<form>
+						<h3>Savings info....</h3>
+						<label htmlFor="savingsName">Savings Name:</label>
+						<p id="savingsName">{names}</p>
+						<br />
+						<label htmlFor="savingsAmount">Saved Amount:</label>
+						<p id="savingsAmount">
+							{savedAmount} {incomingTokenName}
+						</p>
+						<br />
+						<label htmlFor="savingsWithdrawal">Withdrawal Date:</label>
+						<p id="savingsWithdrawal">{expectedWithdrawalDate}</p>
+					</form>
+				)}
 				{/*  withrawal form.... */}
 				<div class="my-8">
+					<h3>Withdrawal Slip..</h3>
 					<form>
-						<h3>Withdrawal Slip..</h3>
 						<label htmlFor="savingsNames">Savings Name:</label>
 						<input
 							type="text"
@@ -489,21 +572,20 @@ const SavingDetails = () => {
 							onChange={inputChange}
 						/>
 						<br />
-						<p>
-							<button
-								disabled={!isConnected}
-								type="submit"
-								class="rounded-full"
-								onClick={handleWithdrawalSubmit}
-							>
-								WITHDRAW!
-							</button>
-						</p>
+
+						<button
+							// disabled={}
+							type="submit"
+							class="rounded-full"
+							onClick={handleWithdrawalSubmit}
+						>
+							WITHDRAW!
+						</button>
 					</form>
 
 					{/* Emergency WithdrawalSLip */}
+					<h3>Emergency Withdrawal Slip..</h3>
 					<form>
-						<h3>Emergency Withdrawal Slip..</h3>
 						<label htmlFor="savingsNamess">Savings Name:</label>
 						<input
 							type="text"
@@ -514,16 +596,14 @@ const SavingDetails = () => {
 							onChange={inputChange}
 						/>
 						<br />
-						<p>
-							<button
-								disabled={!isConnected}
-								type="submit"
-								class="rounded-full"
-								onClick={handleEmergencyWithdrawalSubmit}
-							>
-								EMERGENCY!
-							</button>
-						</p>
+						<button
+							// disabled={}
+							type="submit"
+							class="rounded-full"
+							onClick={handleEmergencyWithdrawalSubmit}
+						>
+							EMERGENCY!
+						</button>
 					</form>
 				</div>
 			</WagmiConfig>
