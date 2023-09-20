@@ -535,7 +535,7 @@ const SavingDetails = () => {
 						<div>
 							{keys.map((each, index) => {
 								return (
-									<div key={index} onClick={() => clicked(each)}>
+									<div title="Click to see More information" key={index} onClick={() => clicked(each)}>
 										{each}
 									</div>
 								);
