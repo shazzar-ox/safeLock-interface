@@ -5,7 +5,12 @@ import { PROJECT_ID } from "../utils/contractAddress";
 import { ethers } from "ethers";
 import { contractDetails } from "../components/index";
 import { useRouter } from "next/navigation";
-import { useNotification, NotificationProvider } from "@web3uikit/core";
+import {
+	useNotification,
+	NotificationProvider,
+	Information,
+	Button
+} from "@web3uikit/core";
 
 // import fs from "../utils/index.jsx";
 
@@ -31,7 +36,7 @@ import {
 } from "@web3modal/ethereum";
 import { Web3Modal, useWeb3Modal } from "@web3modal/react";
 import { sepolia } from "wagmi/chains";
-import {BsFillBellFill} from "react-icons/bs"
+import { BsFillBellFill } from "react-icons/bs";
 
 const chains = [sepolia];
 const projectId = PROJECT_ID;
@@ -48,9 +53,7 @@ const ethereumClient = new EthereumClient(wagmiConfig, chains);
 
 const SavingDetails = () => {
 	let token, tokenValue, data;
-	// const config = useConfig()
-	// const { data: account } = useAccount();
-	// console.log(account);
+
 	const { connector: activeConnector, isConnected, address } = useAccount();
 	const { connect, connectors, error, isLoading, pendingConnector } =
 		useConnect();
@@ -61,6 +64,7 @@ const SavingDetails = () => {
 	const [decimal, setDecimal] = useState(0);
 	const [state, setState] = useState(false);
 	const [count, setcount] = useState(0);
+	const [balance, setBalance] = useState("");
 	const [incomingContract, setIncomingContract] = useState("");
 	const [incomingContractAbi, setIncomingContractAbi] = useState("");
 	const [currentChainId, setCurrentChainId] = useState(1);
@@ -97,7 +101,7 @@ const SavingDetails = () => {
 			message: msg,
 			title: "New Notification",
 			position: "topR",
-			icon: <BsFillBellFill/>,
+			icon: <BsFillBellFill />,
 		});
 	};
 	// 1. getUserBalance contract....
@@ -117,6 +121,16 @@ const SavingDetails = () => {
 		args: [incomingContract, address],
 		watch: true,
 	});
+
+	// read token balnce address...
+	const totalBalance = useContractRead({
+		address: safeLockContract,
+		abi: tokenLockAbi,
+		functionName: "getTotalTokenSavings",
+		args: [incomingContract, address],
+		watch: true,
+	});
+
 	// wait for readConfirmation...
 
 	// const readConfirmation = useWaitForTransaction({
@@ -267,13 +281,12 @@ const SavingDetails = () => {
 		} else {
 			setState(!state);
 		}
-	}, [address]);
+	}, [address, isConnected]);
 
 	// let createTableRows;
 	let userNames = [];
 	useEffect(() => {
 		if (getUserSavingsName.data != undefined) {
-			console.log("in");
 			for (let i = 0; i < getUserSavingsName.data.length; i++) {
 				const newArray = getUserSavingsName.data[i];
 				userNames.push(newArray);
@@ -282,8 +295,13 @@ const SavingDetails = () => {
 				});
 			}
 		}
+		if (totalBalance.data != undefined) {
+			console.log(totalBalance.data.toString());
+			setBalance((prev) => (prev = totalBalance?.data.toString()));
+		}
 	}, [
 		getUserSavingsName.isSuccess,
+		totalBalance.isSuccess,
 		// getUserSavingsName.isLoading,
 		// readConfirmation.isSuccess,
 		saveConfirmation.isSuccess,
@@ -462,13 +480,14 @@ const SavingDetails = () => {
 		setNames(value);
 		setUserFormData(true);
 	};
-	console.log(address, appState);
 	return (
 		<>
 			{/* <div onClick={refresh}> */}
 			<WagmiConfig config={wagmiConfig}>
 				<Nav />
 				{/* </div> */}
+				<Information information={balance / decimal} topic="Your Balance" />
+
 				<div class="my-8">
 					<form>
 						<label htmlFor="savingsName">Savings Name:</label>
@@ -503,10 +522,19 @@ const SavingDetails = () => {
 							onChange={inputChange}
 						></input>
 						<br />
+						<Button
+							color="yellow"
+							onClick={function noRefCheck() {}}
+							radius={0}
+							size="large"
+							text="Approve"
+							theme="colored"
+							type="button"
+						/>
 
 						<button
 							// type="submit"
-							// disabled={appState || address == undefined}
+							disabled={appState}
 							class="rounded-full"
 							// onClick={
 							// }
@@ -516,7 +544,7 @@ const SavingDetails = () => {
 						</button>
 
 						<button
-							// disabled={address == undefined || !appState}
+							disabled={!appState}
 							type="submit"
 							class="rounded-full"
 							onClick={handleSubmit}
@@ -535,7 +563,11 @@ const SavingDetails = () => {
 						<div>
 							{keys.map((each, index) => {
 								return (
-									<div title="Click to see More information" key={index} onClick={() => clicked(each)}>
+									<div
+										title="Click to see More information"
+										key={index}
+										onClick={() => clicked(each)}
+									>
 										{each}
 									</div>
 								);

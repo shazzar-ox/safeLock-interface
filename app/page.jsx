@@ -41,24 +41,18 @@ const Home = () => {
 	const [currentAddress, setCurrentAddress] = useState("0");
 	const [decimalPlace, setDecimalPlace] = useState(1);
 	const [stateChange, setStateChange] = useState(true);
-	const [savingsTokenName, setSavingsTokenName] = useState("")
+	const [savingsTokenName, setSavingsTokenName] = useState("");
 	// const [decimalPlace, setDecimalPlace] = useState(0)
 
 	const click = (name, decimalPlaces) => {
-		console.log(name);
-		// setCurrentAddress((prev) => (prev = name));
 		localStorage.setItem("tokenName", name);
 		localStorage.setItem("value", decimalPlaces);
-		setSavingsTokenName(prev=> prev = name)
+		setSavingsTokenName((prev) => (prev = name));
 		setDecimalPlace((prev) => (prev = decimalPlaces));
 		// setStateChange(!stateChange)
 		// <Link>
 	};
 
-	useEffect(()=>{
-
-	}, [])
-	// console.log(stateChange);
 
 	return (
 		<>
@@ -68,12 +62,13 @@ const Home = () => {
 				<Link href="/details">
 					<div
 						class="m-8 bg-gray-700 gap-x-8"
-						onClick={() => click(USDT_ADDRESS, 1000000)}
+						onClick={() => click("aave", 1000000)}
 					>
 						<Curency
 							icon={<FaDollarSign />}
 							contract={savingsTokenName}
-							name={"usdt"}
+							name={"aave"}
+							num={1000000}
 							digit={decimalPlace}
 						/>
 					</div>
@@ -82,12 +77,13 @@ const Home = () => {
 				<Link href="/details">
 					<div
 						class="m-8 bg-gray-700 gap-x-8"
-						onClick={() => click(EURO_ADDRESS, 1000000)}
+						onClick={() => click("usdt", 1000000)}
 					>
 						<Curency
 							icon={<FaEuroSign />}
 							contract={savingsTokenName}
-							name={"Euro"}
+							name={"usdt"}
+							num={1000000}
 							digit={decimalPlace}
 						/>
 					</div>
@@ -96,12 +92,13 @@ const Home = () => {
 				<Link href="/details">
 					<div
 						class="m-8 bg-gray-700 gap-x-8"
-						onClick={() => click(GBP_ADDRESS, 1000000)}
+						onClick={() => click("link", 1000000)}
 					>
 						<Curency
 							icon={<FaPoundSign />}
 							contract={savingsTokenName}
-							name={"GBP"}
+							name={"link"}
+							num={1000000}
 							digit={decimalPlace}
 						/>
 						{/* <SavingDetails contract={currentAddress} decimal={decimalPlace}/> */}
