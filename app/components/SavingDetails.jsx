@@ -9,7 +9,12 @@ import {
 	useNotification,
 	NotificationProvider,
 	Information,
-	Button
+	Button,
+	Form,
+	Input,
+	DatePicker,
+	TabList,
+	Tab,
 } from "@web3uikit/core";
 
 // import fs from "../utils/index.jsx";
@@ -91,6 +96,9 @@ const SavingDetails = () => {
 	const [savedList, setSavedList] = useState("");
 	const { push } = useRouter();
 	const dispatch = useNotification();
+	const [callFunc, setCallFunc] = useState(false);
+	const [chosenNumber, setChosenNumber] = useState("");
+	const [isMobile, setIsMobile] = useState(false);
 	// integrating front end to the contract with Wagmi...
 
 	// control all notifcations...
@@ -174,10 +182,9 @@ const SavingDetails = () => {
 		abi: tokenLockAbi,
 		functionName: "withdraw",
 		args: [incomingContract, savingsInfo.withdrawalName],
-		onError(error) {
-			// alert("time is not up");
-			handleNewNotification("time is not up");
-		},
+		// onError(error) {
+		// 	handleNewNotification("time is not up");
+		// },
 	});
 
 	//  prepare config for emergency withdrawal....emergencyWithdrawalName
@@ -210,6 +217,7 @@ const SavingDetails = () => {
 
 	// withdraw function settings...
 	const {
+		isError: withdrawError,
 		isSuccess: withdrawSuccess,
 		data: withdrawData,
 		write: withdrawFunc,
@@ -239,7 +247,7 @@ const SavingDetails = () => {
 
 	// functions....
 	const approveToken = async (event) => {
-		event.preventDefault();
+		// event.preventDefault();
 		const data = await getDataBalance.data;
 		console.log(`data remaining is ${data}`);
 		approveFunc();
@@ -330,28 +338,11 @@ const SavingDetails = () => {
 		}
 	}, [getUserSavingsInfo.isSuccess, names, isConnected]);
 
-	useEffect(() => {
-		if (userFormData) {
-			const handleBodyClick = (event) => {
-				// Your event handling logic here
-				// console.log("Body clicked!", event.target);
-				setUserFormData(false);
-			};
-
-			document.body.addEventListener("click", handleBodyClick);
-
-			return () => {
-				document.removeEventListener("click", handleBodyClick);
-			};
-		}
-	});
-
-	// console.log("this is ", eachNameArray);
-	// approve function setttings...
 	const {
 		data: data1,
 		write: approveFunc,
 		isSuccess: approveSuccess,
+		// isLoading:
 		reset: approveReset,
 	} = useContractWrite(approveConfig);
 
@@ -409,6 +400,28 @@ const SavingDetails = () => {
 		withdrawEmergencyConfrimation.isSuccess,
 	]);
 
+	// contol form...
+
+	useEffect(() => {
+		const handleResize = () => {
+			setIsMobile(window.innerWidth <= 768); // Adjust the screen size breakpoint as needed
+		};
+
+		window.addEventListener("resize", handleResize);
+		handleResize(); // Set initial screen size
+
+		return () => {
+			window.removeEventListener("resize", handleResize);
+		};
+	}, []);
+
+	// to check error
+	useState(() => {
+		if (withdrawError) {
+			handleNewNotification("time is not up");
+		}
+	}, [withdrawError]);
+
 	const currentDate = new Date();
 	// console.log(currentDate.);
 	const day =
@@ -422,28 +435,30 @@ const SavingDetails = () => {
 	const year = currentDate.getFullYear();
 	// console.log(day, month, year);
 
+	const inputDateChange = (data) => {
+		console.log(data.date);
+		const dateString = data.date;
+		const date = new Date(dateString);
+		const unixTimeStamp = date.getTime() / 1000;
+		setSavingsInfo((prev) => {
+			return { ...prev, date: unixTimeStamp };
+		});
+	};
 	const inputChange = (event) => {
-		const { name, value } = event.target;
-		if (name == "date") {
-			const dateString = value;
-			const date = new Date(dateString);
-			const unixTimeStamp = date.getTime() / 1000;
-			setSavingsInfo((prev) => {
-				return { ...prev, [name]: unixTimeStamp };
-			});
-		} else if (name == "amount") {
+		console.log(event.target.value);
+		const { id, name, value } = event.target;
+		if (name == "amount") {
 			setSavingsInfo((prev) => {
 				return { ...prev, [name]: value * decimal };
 			});
 		} else {
 			setSavingsInfo((prev) => {
-				return { ...prev, [name]: value };
+				return { ...prev, [name]: value.toLowerCase() };
 			});
 		}
-
-		// setConnectedChainId(prev=> prev = chainId)
+		// setConnectedChainId((prev) => (prev = chainId));
 	};
-
+	console.log(savingsInfo);
 	const handleSubmit = (event) => {
 		event.preventDefault();
 		const dateString = `${year}-${month}-${day}`;
@@ -464,12 +479,11 @@ const SavingDetails = () => {
 			saveFunc();
 		}
 	};
-
 	const handleWithdrawalSubmit = (event) => {
 		event.preventDefault();
 		withdrawFunc();
 	};
-
+	console.log(keys);
 	const handleEmergencyWithdrawalSubmit = (event) => {
 		event.preventDefault();
 		withdrawEmergencyFunc();
@@ -477,166 +491,340 @@ const SavingDetails = () => {
 
 	const clicked = (value) => {
 		// console.log(value);
+		// console.log(data)
 		setNames(value);
-		setUserFormData(true);
 	};
+	const change = (data) => {
+		console.log(data);
+		setUserFormData(true);
+
+		clicked(keys[data]);
+		setChosenNumber((prev) => (prev = data));
+	};
+
 	return (
 		<>
 			{/* <div onClick={refresh}> */}
 			<WagmiConfig config={wagmiConfig}>
 				<Nav />
 				{/* </div> */}
-				<Information information={balance / decimal} topic="Your Balance" />
+				<Information
+					information={balance / decimal}
+					topic="Your Balance"
+					style={{ backgroundColor: "white" }}
+				/>
 
-				<div class="my-8">
-					<form>
-						<label htmlFor="savingsName">Savings Name:</label>
-						<input
-							type="text"
-							name="savingsName"
-							id="savingsName"
-							value={savingsInfo.savingsName}
-							placeholder="Input savings name"
-							onChange={inputChange}
-						/>
-						<br />
+				<div
+					className="my-10 gap-y-10 "
+					style={{ maxWidth: "24rem", margin: " 0 auto " }}
+				>
+					<h1 className="my-8 font-bold text-3xl">DEPOSIT SLIP</h1>
+					<br />
+					<Input
+						label="Savings Name"
+						// labelBgColor="#70bd7a"
+						labelColor="cyan"
+						name="savingsName"
+						value={savingsInfo.savingsName}
+						// onBlur={function noRefCheck() {}}
+						onChange={inputChange}
+						size="large"
+						autoFocus
+						errorMessage="this is not valid"
+						style={{
+							backgroundColor: "white",
+							fontWeight: "bold",
+						}}
+					/>
+					<br />
+					<Input
+						label="Amount"
+						name="amount"
+						// value={savingsName.amount}
+						// onBlur={function noRefCheck() {}}
+						labelColor="cyan"
+						onChange={inputChange}
+						size="large"
+						type="number"
+						validation={{
+							numberMin: 0,
+						}}
+						// labelBgColor="#70bd7a"
+						style={{
+							backgroundColor: "white",
+							fontWeight: "bold",
+						}}
+					/>
+					<br />
 
-						<label htmlFor="amount">Amount to Save:</label>
-						<input
-							type="number"
-							placeholder="3"
-							name="amount"
-							// value={savingsInfo.amount}
-							onChange={inputChange}
-							min="0"
-						></input>
-						<br />
+					<DatePicker
+						id="date-picker"
+						name="date"
+						label="Set Withdrawal Date"
+						size="large"
+						width="30px"
+						labelColor="cyan"
+						onChange={inputDateChange}
+						validation={{
+							min: `${year}-${month}-${day}`,
+							required: true,
+						}}
+						// labelBgColor="#70bd7a"
+						style={{
+							backgroundColor: "white",
+							fontWeight: "bold",
+							width: "31%",
+						}}
+					/>
+					<br />
 
-						<label htmlFor="calender">Withdrawal Date</label>
-						<input
-							type="date"
-							id="calender"
-							name="date"
-							// value={savingsInfo.date}
-							min={`${year}-${month}-${day}`}
-							onChange={inputChange}
-						></input>
-						<br />
-						<Button
-							color="yellow"
-							onClick={function noRefCheck() {}}
-							radius={0}
-							size="large"
-							text="Approve"
-							theme="colored"
-							type="button"
-						/>
-
-						<button
-							// type="submit"
-							disabled={appState}
-							class="rounded-full"
-							// onClick={
-							// }
-							onClick={approveToken}
-						>
-							APPROVE!
-						</button>
-
-						<button
-							disabled={!appState}
-							type="submit"
-							class="rounded-full"
-							onClick={handleSubmit}
-						>
-							SAVE!
-						</button>
-					</form>
-				</div>
-				{/* <h3>{!isConnected && "Connect Wallet To Use App"}</h3> */}
-				<div>
-					{incomingTokenName}...{decimal}... hellox
-					<div
-						className="clearList"
-						style={{ display: "inline-flex", gap: "2%" }}
-					>
-						<div>
-							{keys.map((each, index) => {
-								return (
-									<div
-										title="Click to see More information"
-										key={index}
-										onClick={() => clicked(each)}
-									>
-										{each}
-									</div>
-								);
-							})}
+					<div className="flex gap-4">
+						<div className="flex gap-x-7">
+							<Button
+								color="green"
+								onClick={approveToken}
+								radius={0}
+								size="xl"
+								text={
+									approvedTransaction.isLoading ? (
+										<div className="animate-spin spinner-border h-10 w-10 border-b-8 rounded-full"></div>
+									) : (
+										<div className="font-bold text-2xl">Approve</div>
+									)
+								}
+								theme="colored"
+								type="button"
+								disabled={
+									approvedTransaction.isLoading || appState || !isConnected
+								}
+							/>
+						</div>
+						<div class="flex">
+							<Button
+								color="blue"
+								disabled={saveConfirmation.isLoading || !appState}
+								onClick={handleSubmit}
+								size="xl"
+								text={
+									saveConfirmation.isLoading ? (
+										<div className="animate-spin spinner-border h-10 w-10 border-b-8 rounded-full"></div>
+									) : (
+										<div className="font-bold text-2xl">Save</div>
+									)
+								}
+								theme="colored"
+								type="button"
+							/>
 						</div>
 					</div>
 				</div>
-				{address && userFormData && (
-					<form>
-						<h3>Savings info....</h3>
-						<label htmlFor="savingsName">Savings Name:</label>
-						<p id="savingsName">{names}</p>
-						<br />
-						<label htmlFor="savingsAmount">Saved Amount:</label>
-						<p id="savingsAmount">
-							{savedAmount} {incomingTokenName}
-						</p>
-						<br />
-						<label htmlFor="savingsWithdrawal">Withdrawal Date:</label>
-						<p id="savingsWithdrawal">{expectedWithdrawalDate}</p>
-					</form>
-				)}
+				{/* <h3>{!isConnected && "Connect Wallet To Use App"}</h3> */}
+				<div className="my-8">
+					{/* {incomingTokenName}...{decimal}... hellox */}
+					<div
+						className="clearList "
+						style={{ maxWidth: "39rem", margin: " 0 auto ", color: "white" }}
+					>
+						<div>
+							<TabList
+								isWidthAuto
+								defaultActiveKey={0}
+								isVertical={isMobile ? false : true}
+								onChange={change}
+								// onClick={() => clicked(keys[chosenNumber])}
+								tabStyle={isMobile ? "bulbUnion" : "bar"}
+							>
+								{keys.map((each, index) => {
+									return (
+										<Tab
+											key={index}
+											tabKey={index}
+											// onClick={() => clicked(each)}
+											tabNameColor="red"
+											style={{ color: "red" }}
+											tabName={
+												<div class="font-bold  lg:text-white lg:text-3xl md:text-2xl">
+													{each.charAt(0).toUpperCase() + each.slice(1)}
+												</div>
+											}
+											// tabName={each.charAt(0).toUpperCase() + each.slice(1)}
+										>
+											<Form
+												data={[
+													{
+														inputWidth: "100%",
+														name: (
+															<div className="font-bold text-1xl text-black">
+																Savings Name
+															</div>
+														),
+														type: "text",
+														value: `${
+															names == undefined
+																? "Please select saving"
+																: names
+														}`,
+														hasCopyButton: true,
+														size: "large",
+													},
+													{
+														inputWidth: "100%",
+														name: (
+															<div className="font-bold text-1xl text-black">
+																`Amount Saved in ${incomingTokenName}`
+															</div>
+														),
+														type: "number",
+														value: `${savedAmount}`,
+													},
+													{
+														name: (
+															<div className="font-bold text-1xl text-black">
+																Withdrawal Date
+															</div>
+														),
+														type: "text",
+														value: `${expectedWithdrawalDate}`,
+													},
+												]}
+												isDisabled
+												onSubmit={function noRefCheck() {}}
+												customFooter={
+													<div>
+														<Button
+															size="regular"
+															// size="xl"
+															text={
+																expectedWithdrawalDate == "01/01/1970" ? (
+																	<div className="font-bold text-2xl">
+																		Select Savings Name....
+																	</div>
+																) : currentDate >=
+																  new Date(
+																		expectedWithdrawalDate
+																			.split("/")
+																			.reverse()
+																			.join("/")
+																  ) ? (
+																	<div className="font-bold text-2xl">
+																		Congratulations... use withdrawal slip
+																	</div>
+																) : (
+																	<div className="font-bold text-2xl">
+																		World Safest Bank
+																	</div>
+																)
+															}
+															theme="colored"
+															color={
+																currentDate >=
+																new Date(
+																	expectedWithdrawalDate
+																		.split("/")
+																		.reverse()
+																		.join("/")
+																)
+																	? "green"
+																	: "blue"
+															}
+														/>
+													</div>
+												}
+												style={{ backgroundColor: "white", color: "white" }}
+												title={
+													<div className="font-bold text-1xl text-black">
+														Savings Information
+													</div>
+												}
+												size="large"
+											/>
+										</Tab>
+									);
+								})}
+							</TabList>
+						</div>
+					</div>
+				</div>
 				{/*  withrawal form.... */}
-				<div class="my-8">
-					<h3>Withdrawal Slip..</h3>
-					<form>
-						<label htmlFor="savingsNames">Savings Name:</label>
-						<input
-							type="text"
+				<div
+					className="my-8 lg:flex md:grid gap-4"
+					style={{ maxWidth: "39rem", margin: " 0 auto " }}
+				>
+					<div>
+						<Input
+							label={
+								<div className="font-bold text-1xl text-green">
+									Withdrawal Slip
+								</div>
+							}
 							name="withdrawalName"
-							id="savingsNames"
 							value={savingsInfo.withdrawalName}
-							placeholder="Input savings name"
+							// onBlur={function noRefCheck() {}}
 							onChange={inputChange}
+							size="large"
+							autoFocus
+							errorMessage="this is not valid"
+							style={{
+								backgroundColor: "white",
+								fontWeight: "bold",
+							}}
 						/>
 						<br />
 
-						<button
-							// disabled={}
-							type="submit"
-							class="rounded-full"
+						<Button
+							color="green"
+							disabled={withdrawConfirmation.isLoading}
 							onClick={handleWithdrawalSubmit}
-						>
-							WITHDRAW!
-						</button>
-					</form>
-
+							size="large"
+							text={
+								withdrawConfirmation.isLoading ? (
+									<div className="animate-spin spinner-border h-10 w-10 border-b-8 rounded-full"></div>
+								) : (
+									<div className="font-bold text-2xl">WITHDRAW</div>
+								)
+							}
+							theme="colored"
+							type="button"
+						/>
+					</div>
+					<br />
 					{/* Emergency WithdrawalSLip */}
-					<h3>Emergency Withdrawal Slip..</h3>
-					<form>
-						<label htmlFor="savingsNamess">Savings Name:</label>
-						<input
-							type="text"
+					<div>
+						<Input
+							label={
+								<div className="font-bold text-1xl text-red">
+									Emergency Withdrawal Slip
+								</div>
+							}
 							name="emergencyWithdrawalName"
-							id="savingsNamess"
 							value={savingsInfo.emergencyWithdrawalName}
-							placeholder="Input savings name"
+							// onBlur={function noRefCheck() {}}
 							onChange={inputChange}
+							size="large"
+							autoFocus
+							errorMessage="this is not valid"
+							style={{
+								backgroundColor: "white",
+								fontWeight: "bold",
+							}}
 						/>
 						<br />
-						<button
-							// disabled={}
-							type="submit"
-							class="rounded-full"
+						<Button
+							color="red"
+							disabled={withdrawEmergencyConfrimation.isLoading}
 							onClick={handleEmergencyWithdrawalSubmit}
-						>
-							EMERGENCY!
-						</button>
-					</form>
+							size="large"
+							text={
+								withdrawEmergencyConfrimation.isLoading ? (
+									<div className="animate-spin spinner-border h-10 w-10 border-b-8 rounded-full"></div>
+								) : (
+									<div className="font-bold text-2xl">EMERGENCY</div>
+								)
+							}
+							theme="colored"
+							type="button"
+						/>
+					</div>
 				</div>
 			</WagmiConfig>
 			<Web3Modal projectId={projectId} ethereumClient={ethereumClient} />

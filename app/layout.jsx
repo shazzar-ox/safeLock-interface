@@ -18,7 +18,9 @@ export default function RootLayout({ children }) {
 		<>
 			{/* // <QueryClientProvider client={queryClient}> */}
 			<html lang="en">
-				<body className={inter.className}>{children}</body>
+				<body className="bg-gradient-to-r from-cyan-500 via-cyan-500 to-blue-500 ">
+					{children}
+				</body>
 			</html>
 		</>
 		//  </QueryClientProvider>

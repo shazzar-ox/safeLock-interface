@@ -3,7 +3,17 @@ import SavingDetails from "../components/SavingDetails";
 import { createPublicClient, http } from "viem";
 import { PROJECT_ID } from "../utils/contractAddress";
 import { contractDetails } from "../components/index";
-
+import {
+	useNotification,
+	NotificationProvider,
+	Information,
+	Button,
+	Form,
+	Input,
+	DatePicker,
+	TabList,
+	Tab,
+} from "@web3uikit/core";
 import {
 	useAccount,
 	configureChains,
@@ -40,8 +50,8 @@ const ethereumClient = new EthereumClient(wagmiConfig, chains);
 
 const tokenLockAbi = contractDetails["tokenLock"]["tokenAbi"];
 
-const Curency = ({ icon, contract, name,num, digit }) => {
-	console.log(num)
+const Curency = ({ icon, contract, name, num, digit }) => {
+	console.log(num);
 	const [currentChainId, setCurrentChainId] = useState(1);
 	const [incomingTokenName, setIncomingTokenName] = useState(0);
 	const [decimal, setDecimal] = useState(0);
@@ -94,24 +104,22 @@ const Curency = ({ icon, contract, name,num, digit }) => {
 	useEffect(() => {
 		if (totalBalance.isSuccess) {
 			console.log(totalBalance.data.toString());
-			setBalance((prev) => (prev = totalBalance?.data.toString() ));
+			setBalance((prev) => (prev = totalBalance?.data.toString()));
 		}
 	}, [totalBalance.isSuccess, isConnected]);
 
 	return (
 		<>
 			<WagmiConfig config={wagmiConfig}>
-				<div class="flex items-center gap-x-4 border-double w-1/2">
-					<div>{icon}</div>
+				<div class="flex items-center my-8 gap-x-4 lg:w-1/2 mx-auto md:w-2/3" >
+					<div className="font-bold text-3xl">{icon}</div>
 					<div>
+						<h2 className="font-bold text-2xl">TokenKeep {name}</h2>
 						<i>click to save more {name}</i>
-						<h2>TokenKeep {name}</h2>
 					</div>
-					<div>
-						Total {name} saved:
-						<button class="rounded-full">{balance / num}</button>
-					</div>
+				<Information topic="Current Balance" information={balance / num} />
 				</div>
+
 			</WagmiConfig>
 		</>
 	);

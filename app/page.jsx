@@ -53,7 +53,6 @@ const Home = () => {
 		// <Link>
 	};
 
-
 	return (
 		<>
 			<WagmiConfig config={wagmiConfig}>
@@ -61,7 +60,8 @@ const Home = () => {
 				<Nav />
 				<Link href="/details">
 					<div
-						class="m-8 bg-gray-700 gap-x-8"
+						// class="m-x-8 gap-x-8"
+						// style={{margin: "0 auto" }}
 						onClick={() => click("aave", 1000000)}
 					>
 						<Curency
@@ -75,10 +75,7 @@ const Home = () => {
 				</Link>
 
 				<Link href="/details">
-					<div
-						class="m-8 bg-gray-700 gap-x-8"
-						onClick={() => click("usdt", 1000000)}
-					>
+					<div  onClick={() => click("usdt", 1000000)}>
 						<Curency
 							icon={<FaEuroSign />}
 							contract={savingsTokenName}
@@ -90,10 +87,7 @@ const Home = () => {
 				</Link>
 
 				<Link href="/details">
-					<div
-						class="m-8 bg-gray-700 gap-x-8"
-						onClick={() => click("link", 1000000)}
-					>
+					<div className="mx-auto" onClick={() => click("link", 1000000)}>
 						<Curency
 							icon={<FaPoundSign />}
 							contract={savingsTokenName}
