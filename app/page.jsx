@@ -75,7 +75,7 @@ const Home = () => {
 				</Link>
 
 				<Link href="/details">
-					<div onClick={() => click("aave", 10e18)}>
+					<div onClick={() => click("aave", 1e18)}>
 						<Curency
 							icon={<FaEuroSign />}
 							contract={savingsTokenName}
@@ -87,7 +87,7 @@ const Home = () => {
 				</Link>
 
 				<Link href="/details">
-					<div className="mx-auto" onClick={() => click("link", 1000000)}>
+					<div className="mx-auto" onClick={() => click("link", 1e18)}>
 						<Curency
 							icon={<FaPoundSign />}
 							contract={savingsTokenName}
