@@ -628,7 +628,7 @@ const SavingDetails = () => {
 						<div>
 							<TabList
 								isWidthAuto
-								defaultActiveKey={0}
+								defaultActiveKey={1}
 								isVertical={isMobile ? false : true}
 								onChange={change}
 								// onClick={() => clicked(keys[chosenNumber])}

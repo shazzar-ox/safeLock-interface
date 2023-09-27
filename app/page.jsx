@@ -75,12 +75,12 @@ const Home = () => {
 				</Link>
 
 				<Link href="/details">
-					<div onClick={() => click("aave", 1e18)}>
+					<div onClick={() => click("aave", 10e18)}>
 						<Curency
 							icon={<FaEuroSign />}
 							contract={savingsTokenName}
 							name={"aave"}
-							num={1000000}
+							num={10e18}
 							digit={decimalPlace}
 						/>
 					</div>
