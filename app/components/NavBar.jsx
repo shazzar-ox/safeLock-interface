@@ -1,5 +1,6 @@
 "use-client"
 import React, { useEffect } from "react";
+import { useMoralis } from "react-moralis";
 
 
 const NavBar = () => {
