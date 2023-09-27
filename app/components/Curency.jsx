@@ -112,10 +112,10 @@ const Curency = ({ icon, contract, name, num, digit }) => {
 		<>
 			<WagmiConfig config={wagmiConfig}>
 				<div class="flex items-center my-8 gap-x-4 lg:w-1/2 mx-auto md:w-2/3" >
-					<div className="font-bold text-3xl">{icon}</div>
+					<div className="font-bold lg:text-3xl md:text-2xl text-white">{icon}</div>
 					<div>
-						<h2 className="font-bold text-2xl">TokenKeep {name}</h2>
-						<i>click to save more {name}</i>
+						<h2 className="font-bold lg:text-2xl md:text-2xl text-white">TokenKeep {name}</h2>
+						<i className="text-white">click to save more {name}</i>
 					</div>
 				<Information topic="Current Balance" information={balance / num} />
 				</div>

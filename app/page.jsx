@@ -62,7 +62,7 @@ const Home = () => {
 					<div
 						// class="m-x-8 gap-x-8"
 						// style={{margin: "0 auto" }}
-						onClick={() => click("aave", 1000000)}
+						onClick={() => click("usdt", 1000000)}
 					>
 						<Curency
 							icon={<FaDollarSign />}
@@ -75,7 +75,7 @@ const Home = () => {
 				</Link>
 
 				<Link href="/details">
-					<div  onClick={() => click("usdt", 1000000)}>
+					<div onClick={() => click("aave", 1e18)}>
 						<Curency
 							icon={<FaEuroSign />}
 							contract={savingsTokenName}

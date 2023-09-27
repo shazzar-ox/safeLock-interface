@@ -8,7 +8,7 @@ const Nav = () => {
 		<>
 			<div className="p-5  border-b-2 flex">
 				<Link href="/">
-					<h2 className="py-4 px-4 font-bold text-3xl">Token Keep</h2>
+					<h2 className="py-4 px-4 font-bold lg:text-3xl md:text-2xl text-white">Token Keep</h2>
 				</Link>
 				<div className="ml-auto py-4 px-2">
 					<Web3Button themeMode="dark" />
