@@ -80,7 +80,7 @@ const Home = () => {
 							icon={<FaEuroSign />}
 							contract={savingsTokenName}
 							name={"aave"}
-							num={10e18}
+							num={1e18}
 							digit={decimalPlace}
 						/>
 					</div>
@@ -92,7 +92,7 @@ const Home = () => {
 							icon={<FaPoundSign />}
 							contract={savingsTokenName}
 							name={"link"}
-							num={1000000}
+							num={1e18}
 							digit={decimalPlace}
 						/>
 						{/* <SavingDetails contract={currentAddress} decimal={decimalPlace}/> */}
