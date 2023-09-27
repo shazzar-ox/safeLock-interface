@@ -67,7 +67,7 @@ const Home = () => {
 						<Curency
 							icon={<FaDollarSign />}
 							contract={savingsTokenName}
-							name={"aave"}
+							name={"usdt"}
 							num={1000000}
 							digit={decimalPlace}
 						/>
@@ -79,7 +79,7 @@ const Home = () => {
 						<Curency
 							icon={<FaEuroSign />}
 							contract={savingsTokenName}
-							name={"usdt"}
+							name={"aave"}
 							num={1000000}
 							digit={decimalPlace}
 						/>
